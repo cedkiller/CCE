@@ -38,117 +38,122 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="align-middle mb-0 table table-borderless table-striped table-hover" id="tableList">
-                        <thead>
-                            <tr>
-                                <th width="25%">Examinee Fullname</th>
-                                <th>Score / Over</th>
-                                <th>Percentage</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                                while ($selExmneRow = $selExmne->fetch(PDO::FETCH_ASSOC)) { 
-                                    $exmneId = $selExmneRow['exmne_id'];
+                <table class="align-middle mb-0 table table-borderless table-striped table-hover" id="tableList">
+                    <thead>
+                        <tr>
+                            <th width="25%">Examinee Fullname</th>
+                            <th>Score / Over</th>
+                            <th>Percentage</th>
+                            <th>Action</th> <!-- New action header -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                            while ($selExmneRow = $selExmne->fetch(PDO::FETCH_ASSOC)) { 
+                                $exmneId = $selExmneRow['exmne_id'];
 
-                                    // Prepare and execute the first SQL statement
-                                    $selScoreStmt = $conn->prepare("
-                                        SELECT * 
-                                        FROM exam_question_tbl eqt 
-                                        INNER JOIN exam_answers ea 
-                                        ON eqt.eqt_id = ea.quest_id 
-                                        AND eqt.exam_answer = ea.exans_answer  
-                                        WHERE ea.axmne_id = :exmneId 
-                                        AND ea.exam_id = :examId 
-                                        AND ea.exans_status = 'new' 
-                                        ORDER BY ea.exans_id DESC
-                                    ");
-                                    $selScoreStmt->bindParam(':exmneId', $exmneId);
-                                    $selScoreStmt->bindParam(':examId', $exam_id);
-                                    $selScoreStmt->execute();
-                                    $selScore = $selScoreStmt->rowCount();
+                                // Prepare and execute the first SQL statement
+                                $selScoreStmt = $conn->prepare("
+                                    SELECT * 
+                                    FROM exam_question_tbl eqt 
+                                    INNER JOIN exam_answers ea 
+                                    ON eqt.eqt_id = ea.quest_id 
+                                    AND eqt.exam_answer = ea.exans_answer  
+                                    WHERE ea.axmne_id = :exmneId 
+                                    AND ea.exam_id = :examId 
+                                    AND ea.exans_status = 'new' 
+                                    ORDER BY ea.exans_id DESC
+                                ");
+                                $selScoreStmt->bindParam(':exmneId', $exmneId);
+                                $selScoreStmt->bindParam(':examId', $exam_id);
+                                $selScoreStmt->execute();
+                                $selScore = $selScoreStmt->rowCount();
 
-                                    // Prepare and execute the second SQL statement
-                                    $selAttemptStmt = $conn->prepare("
-                                        SELECT * 
-                                        FROM exam_attempt 
-                                        WHERE exmne_id = :exmneId 
-                                        AND exam_id = :examId
-                                    ");
-                                    $selAttemptStmt->bindParam(':exmneId', $exmneId);
-                                    $selAttemptStmt->bindParam(':examId', $exam_id);
-                                    $selAttemptStmt->execute();
+                                // Prepare and execute the second SQL statement
+                                $selAttemptStmt = $conn->prepare("
+                                    SELECT * 
+                                    FROM exam_attempt 
+                                    WHERE exmne_id = :exmneId 
+                                    AND exam_id = :examId
+                                ");
+                                $selAttemptStmt->bindParam(':exmneId', $exmneId);
+                                $selAttemptStmt->bindParam(':examId', $exam_id);
+                                $selAttemptStmt->execute();
 
-                                    // Prepare and execute the third SQL statement
-                                    $stmt = $conn->prepare("
-                                        SELECT COUNT(exam_id) as total_questions 
-                                        FROM exam_question_tbl 
-                                        WHERE exam_id = :examId
-                                    ");
-                                    $stmt->bindParam(':examId', $exam_id);
-                                    $stmt->execute();
-                                    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-                                    $over = $result["total_questions"];
+                                // Prepare and execute the third SQL statement
+                                $stmt = $conn->prepare("
+                                    SELECT COUNT(exam_id) as total_questions 
+                                    FROM exam_question_tbl 
+                                    WHERE exam_id = :examId
+                                ");
+                                $stmt->bindParam(':examId', $exam_id);
+                                $stmt->execute();
+                                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                                $over = $result["total_questions"];
 
-                                    // Calculate the score and percentage only if $over is not zero
-                                    if ($over > 0) {
-                                        $score = $selScore;
-                                        $ans = ($score / $over) * 100;
-                                    } else {
-                                        $score = 0;
-                                        $ans = 0;
-                                    }
+                                // Calculate the score and percentage only if $over is not zero
+                                if ($over > 0) {
+                                    $score = $selScore;
+                                    $ans = ($score / $over) * 100;
+                                } else {
+                                    $score = 0;
+                                    $ans = 0;
+                                }
 
-                                    // Determine the category based on the score
-                                    $category = 'Failed';
-                                    if ($selAttemptStmt->rowCount() == 0) {
-                                        $category = 'Not Answering';
-                                    } else if ($ans >= 90) {
-                                        $category = 'Excellence';
-                                    } else if ($ans >= 80) {
-                                        $category = 'Very Good';
-                                    } else if ($ans >= 75) {
-                                        $category = 'Good';
-                                    }
-                            ?>
-                                    <tr data-category="<?php echo $category; ?>" style="<?php 
-                                        if ($category == 'Not Answering') {
-                                            echo "background-color: #E9ECEE; color: black;";
-                                        } else if ($category == 'Excellence') {
-                                            echo "background-color: yellow;";
-                                        } else if ($category == 'Very Good') {
-                                            echo "background-color: green; color: white;";
-                                        } else if ($category == 'Good') {
-                                            echo "background-color: blue; color: white;";
+                                // Determine the category based on the score
+                                $category = 'Failed';
+                                if ($selAttemptStmt->rowCount() == 0) {
+                                    $category = 'Not Answering';
+                                } else if ($ans >= 90) {
+                                    $category = 'Excellence';
+                                } else if ($ans >= 80) {
+                                    $category = 'Very Good';
+                                } else if ($ans >= 75) {
+                                    $category = 'Good';
+                                }
+                        ?>
+                            <tr data-category="<?php echo htmlspecialchars($category); ?>" style="<?php 
+                                if ($category == 'Not Answering') {
+                                    echo "background-color: #E9ECEE; color: black;";
+                                } else if ($category == 'Excellence') {
+                                    echo "background-color: yellow;";
+                                } else if ($category == 'Very Good') {
+                                    echo "background-color: green; color: white;";
+                                } else if ($category == 'Good') {
+                                    echo "background-color: blue; color: white;";
+                                } else {
+                                    echo "background-color: red; color: white;";
+                                }
+                            ?>">
+                                <td><?php echo htmlspecialchars($selExmneRow['exmne_fullname']); ?></td>
+                                <td>
+                                    <?php 
+                                        if ($selAttemptStmt->rowCount() == 0) {
+                                            echo "Not answered yet";
                                         } else {
-                                            echo "background-color: red; color: white;";
+                                            echo htmlspecialchars($selScore) . " / " . htmlspecialchars($over);
                                         }
-                                    ?>">
-                                        <td><?php echo htmlspecialchars($selExmneRow['exmne_fullname']); ?></td>
-                                        <td>
-                                            <?php 
-                                                if ($selAttemptStmt->rowCount() == 0) {
-                                                    echo "Not answered yet";
-                                                } else {
-                                                    echo $selScore . " / " . $over;
-                                                }
-                                            ?>
-                                        </td>
-                                        <td>
-                                            <?php 
-                                                if ($selAttemptStmt->rowCount() == 0) {
-                                                    echo "Not answered yet";
-                                                } else {
-                                                    echo number_format($ans, 2) . '%';
-                                                }
-                                            ?>
-                                        </td>
-                                    </tr>
-                            <?php 
-                                } 
-                            ?>         
-                        </tbody>
-                    </table>
+                                    ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                        if ($selAttemptStmt->rowCount() == 0) {
+                                            echo "Not answered yet";
+                                        } else {
+                                            echo htmlspecialchars(number_format($ans, 2)) . '%';
+                                        }
+                                    ?>
+                                </td>
+                                <td>
+                                    <a href="./pages/result.php?examId=<?php echo urlencode($exam_id); ?>&exmneId=<?php echo urlencode($exmneId); ?>" class="btn btn-primary">View</a>
+                                </td>
+                            </tr>
+                        <?php 
+                            } 
+                        ?>         
+                    </tbody>
+                </table>
+
                 </div>
         <?php
             } else { 
