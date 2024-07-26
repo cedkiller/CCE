@@ -16,16 +16,18 @@
                     <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search for names..">
                     <!-- Limit Dropdown -->
                     <select id="limitSelect" onchange="limitTable()">
+                        <option value="all">All</option>
                         <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
                     </select>
+
                     <table class="align-middle mb-0 table table-borderless table-striped table-hover" id="tableList">
                         <thead>
                             <tr>
                                 <th>Fullname</th>
                                 <th>Gender</th>
-                                <th>Birthdate</th>
+                                <th>Student Number</th>
                                 <th>Section</th>
                                 <th>Year level</th>
                                 <th>Email</th>
@@ -85,8 +87,13 @@ function searchTable() {
     table = document.getElementById("tableList");
     tr = table.getElementsByTagName("tr");
 
+    // First, show all rows
     for (i = 1; i < tr.length; i++) {
         tr[i].style.display = "none";
+    }
+
+    // Filter rows based on search input
+    for (i = 1; i < tr.length; i++) {
         td = tr[i].getElementsByTagName("td");
         for (j = 0; j < td.length; j++) {
             if (td[j]) {
@@ -98,20 +105,34 @@ function searchTable() {
             }
         }
     }
+
+    // Apply limit after filtering
     limitTable();
 }
 
 function limitTable() {
-    var limit, table, tr, i;
-    limit = parseInt(document.getElementById("limitSelect").value);
+    var limit, table, tr, i, visibleCount;
+    limit = document.getElementById("limitSelect").value;
     table = document.getElementById("tableList");
     tr = table.getElementsByTagName("tr");
+    visibleCount = 0;
 
-    for (i = 1; i < tr.length; i++) {
-        if (i <= limit) {
-            tr[i].style.display = "";
-        } else {
-            tr[i].style.display = "none";
+    if (limit === "all") {
+        // Show all rows if "All" is selected
+        for (i = 1; i < tr.length; i++) {
+            if (tr[i].style.display !== "none") {
+                tr[i].style.display = "";
+            }
+        }
+    } else {
+        // Limit the number of visible rows
+        for (i = 1; i < tr.length; i++) {
+            if (tr[i].style.display !== "none") {
+                visibleCount++;
+                if (visibleCount > parseInt(limit)) {
+                    tr[i].style.display = "none";
+                }
+            }
         }
     }
 }
@@ -120,4 +141,16 @@ function limitTable() {
 window.onload = function() {
     limitTable();
 };
+
+// Reapply limit when the limit changes
+document.getElementById("limitSelect").onchange = function() {
+    searchTable(); // Reapply search and then limit
+};
+
+// Apply search functionality when typing
+document.getElementById("searchInput").onkeyup = function() {
+    searchTable();
+};
 </script>
+
+
